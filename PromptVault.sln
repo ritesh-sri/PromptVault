@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PromptVault", "PromptVault\PromptVault.csproj", "{BEB4B203-7E17-4A83-BFC0-30E483A4F70C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BEB4B203-7E17-4A83-BFC0-30E483A4F70C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BEB4B203-7E17-4A83-BFC0-30E483A4F70C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BEB4B203-7E17-4A83-BFC0-30E483A4F70C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BEB4B203-7E17-4A83-BFC0-30E483A4F70C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A38B145B-5191-44E0-9F3F-5F2F7D1188EB}
+	EndGlobalSection
+EndGlobal
