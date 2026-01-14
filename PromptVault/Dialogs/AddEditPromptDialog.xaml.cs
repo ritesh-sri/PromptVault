@@ -18,6 +18,10 @@ namespace PromptVault.Dialogs
             IsEditMode = false;
             InitializeForAdd();
             ContentTextBox.TextChanged += ContentTextBox_TextChanged;
+
+            // Allow custom AI providers and models
+            AIProviderComboBox.IsEditable = true;
+            ModelVersionComboBox.IsEditable = true;
         }
 
         public AddEditPromptDialog(Prompt prompt)
@@ -27,6 +31,10 @@ namespace PromptVault.Dialogs
             EditingPrompt = prompt;
             InitializeForEdit(prompt);
             ContentTextBox.TextChanged += ContentTextBox_TextChanged;
+
+            // Allow custom AI providers and models
+            AIProviderComboBox.IsEditable = true;
+            ModelVersionComboBox.IsEditable = true;
         }
 
         private void InitializeForAdd()
@@ -88,7 +96,7 @@ namespace PromptVault.Dialogs
         {
             if (ModelVersionComboBox == null) return;
 
-            var selectedProvider = (AIProviderComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+            var selectedProvider = AIProviderComboBox.Text; // Use Text instead of SelectedItem
             if (!string.IsNullOrEmpty(selectedProvider))
             {
                 UpdateModelVersions(selectedProvider);
@@ -101,23 +109,27 @@ namespace PromptVault.Dialogs
 
             var versions = new List<string>();
 
-            switch (provider)
+            // Handle custom providers by checking the text
+            if (provider.Contains("ChatGPT") || provider == "ChatGPT")
             {
-                case "ChatGPT":
-                    versions = new List<string> { "GPT-4", "GPT-4 Turbo", "GPT-3.5", "GPT-4o" };
-                    break;
-                case "Claude":
-                    versions = new List<string> { "Claude 3.5 Sonnet", "Claude 3 Opus", "Claude 3 Sonnet", "Claude 3 Haiku" };
-                    break;
-                case "Gemini":
-                    versions = new List<string> { "Gemini 1.5 Pro", "Gemini Pro", "Gemini Ultra" };
-                    break;
-                case "Copilot":
-                    versions = new List<string> { "Copilot (GPT-4)", "Copilot" };
-                    break;
-                default:
-                    versions = new List<string> { "Unknown" };
-                    break;
+                versions = new List<string> { "GPT-4", "GPT-4 Turbo", "GPT-3.5", "GPT-4o", "o1", "o1-mini" };
+            }
+            else if (provider.Contains("Claude") || provider == "Claude")
+            {
+                versions = new List<string> { "Claude 3.5 Sonnet", "Claude 3 Opus", "Claude 3 Sonnet", "Claude 3 Haiku" };
+            }
+            else if (provider.Contains("Gemini") || provider == "Gemini")
+            {
+                versions = new List<string> { "Gemini 1.5 Pro", "Gemini Pro", "Gemini Ultra", "Gemini 2.0 Flash" };
+            }
+            else if (provider.Contains("Copilot") || provider == "Copilot")
+            {
+                versions = new List<string> { "Copilot (GPT-4)", "Copilot" };
+            }
+            else
+            {
+                // For custom providers, just add "Default" option
+                versions = new List<string> { "Default", "Latest" };
             }
 
             foreach (var version in versions)
@@ -125,7 +137,15 @@ namespace PromptVault.Dialogs
                 ModelVersionComboBox.Items.Add(new ComboBoxItem { Content = version });
             }
 
-            ModelVersionComboBox.SelectedIndex = 0;
+            // If editing and the model exists, select it
+            if (IsEditMode && EditingPrompt != null)
+            {
+                SetComboBoxValue(ModelVersionComboBox, EditingPrompt.ModelVersion);
+            }
+            else
+            {
+                ModelVersionComboBox.SelectedIndex = 0;
+            }
         }
 
         private void ContentTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -160,13 +180,27 @@ namespace PromptVault.Dialogs
                 return;
             }
 
+            // Get AI Provider (support custom text or selected item)
+            string aiProvider = AIProviderComboBox.Text;
+            if (string.IsNullOrWhiteSpace(aiProvider))
+            {
+                aiProvider = (AIProviderComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Unknown";
+            }
+
+            // Get Model Version (support custom text or selected item)
+            string modelVersion = ModelVersionComboBox.Text;
+            if (string.IsNullOrWhiteSpace(modelVersion))
+            {
+                modelVersion = (ModelVersionComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Unknown";
+            }
+
             // Create or update prompt
             if (IsEditMode)
             {
                 EditingPrompt.Title = TitleTextBox.Text.Trim();
                 EditingPrompt.Content = ContentTextBox.Text.Trim();
-                EditingPrompt.AIProvider = (AIProviderComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
-                EditingPrompt.ModelVersion = (ModelVersionComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+                EditingPrompt.AIProvider = aiProvider.Trim();
+                EditingPrompt.ModelVersion = modelVersion.Trim();
                 EditingPrompt.IsFavorite = FavoriteCheckBox.IsChecked ?? false;
                 EditingPrompt.UpdatedAt = DateTime.Now;
 
@@ -179,8 +213,8 @@ namespace PromptVault.Dialogs
                 {
                     Title = TitleTextBox.Text.Trim(),
                     Content = ContentTextBox.Text.Trim(),
-                    AIProvider = (AIProviderComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString(),
-                    ModelVersion = (ModelVersionComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString(),
+                    AIProvider = aiProvider.Trim(),
+                    ModelVersion = modelVersion.Trim(),
                     IsFavorite = FavoriteCheckBox.IsChecked ?? false,
                     Tags = ParseTags(TagsTextBox.Text),
                     CreatedAt = DateTime.Now,

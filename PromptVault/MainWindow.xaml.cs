@@ -18,6 +18,11 @@ namespace PromptVault
         private GlobalHotkey globalHotkey;
         private DatabaseService databaseService;
         private ImportService importService;
+        private List<Prompt> allPrompts;
+        private string currentAIFilter = "All";
+        private string currentModelFilter = "All";
+        private string currentTagFilter = "All";
+        private bool showFavoritesOnly = false;
 
         public MainWindow()
         {
@@ -30,6 +35,9 @@ namespace PromptVault
             // Initialize hotkey after window is loaded
             this.Loaded += MainWindow_Loaded;
 
+            // Set initial theme icon
+            ThemeToggleButton.Content = isDarkMode ? "☀️" : "🌙";
+
             LoadTheme();
             LoadPrompts();
         }
@@ -38,6 +46,9 @@ namespace PromptVault
         {
             // Register hotkey after window handle is created
             InitializeHotkey();
+
+            // Setup filter event handlers
+            SetupFilters();
         }
 
         private void InitializeHotkey()
@@ -68,6 +79,12 @@ namespace PromptVault
             isDarkMode = !isDarkMode;
             ApplyTheme(isDarkMode);
             ThemeToggleButton.Content = isDarkMode ? "☀️" : "🌙";
+
+            // Refresh the prompts to update colors
+            if (allPrompts != null && allPrompts.Count > 0)
+            {
+                ApplyFiltersAndDisplay();
+            }
         }
 
         private void ApplyTheme(bool darkMode)
@@ -168,39 +185,159 @@ namespace PromptVault
         {
             try
             {
-                var prompts = databaseService.GetAllPrompts();
+                allPrompts = databaseService.GetAllPrompts();
 
                 // Update count
-                PromptCountText.Text = $"({prompts.Count})";
+                PromptCountText.Text = $"({allPrompts.Count})";
 
-                // Clear existing prompt cards (keep only static samples for now)
-                PromptsContainer.Children.Clear();
+                // Populate filters
+                PopulateFilters();
 
-                // Generate prompt cards dynamically
-                foreach (var prompt in prompts)
-                {
-                    PromptsContainer.Children.Add(CreatePromptCard(prompt));
-                }
-
-                // If no prompts, show empty state
-                if (prompts.Count == 0)
-                {
-                    var emptyText = new TextBlock
-                    {
-                        Text = "No prompts yet. Click '➕ New Prompt' to get started!",
-                        FontSize = 16,
-                        Foreground = (System.Windows.Media.Brush)Application.Current.Resources["TextSecondaryBrush"],
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        Margin = new Thickness(0, 40, 0, 0)
-                    };
-                    PromptsContainer.Children.Add(emptyText);
-                }
+                // Apply current filters and display
+                ApplyFiltersAndDisplay();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error loading prompts: {ex.Message}",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void SetupFilters()
+        {
+            // AI Platform filter
+            AIPlatformList.SelectionChanged += (s, e) =>
+            {
+                var selected = AIPlatformList.SelectedItem as ListBoxItem;
+                currentAIFilter = selected?.Content?.ToString() ?? "All";
+                ApplyFiltersAndDisplay();
+            };
+
+            // Model Version filter
+            ModelVersionList.SelectionChanged += (s, e) =>
+            {
+                var selected = ModelVersionList.SelectedItem as ListBoxItem;
+                currentModelFilter = selected?.Content?.ToString() ?? "All";
+                ApplyFiltersAndDisplay();
+            };
+
+            // Tags filter
+            TagsList.SelectionChanged += (s, e) =>
+            {
+                var selected = TagsList.SelectedItem as ListBoxItem;
+                currentTagFilter = selected?.Content?.ToString() ?? "All";
+                ApplyFiltersAndDisplay();
+            };
+
+            // Favorites checkbox
+            FavoritesOnly.Checked += (s, e) =>
+            {
+                showFavoritesOnly = true;
+                ApplyFiltersAndDisplay();
+            };
+
+            FavoritesOnly.Unchecked += (s, e) =>
+            {
+                showFavoritesOnly = false;
+                ApplyFiltersAndDisplay();
+            };
+        }
+
+        private void PopulateFilters()
+        {
+            // Populate AI Platforms
+            var aiProviders = allPrompts.Select(p => p.AIProvider).Distinct().OrderBy(p => p).ToList();
+            AIPlatformList.Items.Clear();
+            AIPlatformList.Items.Add(new ListBoxItem { Content = "All", IsSelected = true });
+            foreach (var provider in aiProviders)
+            {
+                AIPlatformList.Items.Add(new ListBoxItem { Content = provider });
+            }
+
+            // Populate Model Versions
+            var modelVersions = allPrompts.Select(p => p.ModelVersion).Distinct().OrderBy(m => m).ToList();
+            ModelVersionList.Items.Clear();
+            ModelVersionList.Items.Add(new ListBoxItem { Content = "All", IsSelected = true });
+            foreach (var model in modelVersions)
+            {
+                ModelVersionList.Items.Add(new ListBoxItem { Content = model });
+            }
+
+            // Populate Tags
+            var allTags = allPrompts.SelectMany(p => p.Tags).Distinct().OrderBy(t => t).ToList();
+            TagsList.Items.Clear();
+            TagsList.Items.Add(new ListBoxItem { Content = "All", IsSelected = true });
+            foreach (var tag in allTags)
+            {
+                TagsList.Items.Add(new ListBoxItem { Content = tag });
+            }
+        }
+
+        private void ApplyFiltersAndDisplay()
+        {
+            if (allPrompts == null) return;
+
+            var filtered = allPrompts.AsEnumerable();
+
+            // Apply AI Platform filter
+            if (currentAIFilter != "All")
+            {
+                filtered = filtered.Where(p => p.AIProvider == currentAIFilter);
+            }
+
+            // Apply Model Version filter
+            if (currentModelFilter != "All")
+            {
+                filtered = filtered.Where(p => p.ModelVersion == currentModelFilter);
+            }
+
+            // Apply Tag filter
+            if (currentTagFilter != "All")
+            {
+                filtered = filtered.Where(p => p.Tags.Contains(currentTagFilter));
+            }
+
+            // Apply Favorites filter
+            if (showFavoritesOnly)
+            {
+                filtered = filtered.Where(p => p.IsFavorite);
+            }
+
+            // Display filtered prompts
+            DisplayPrompts(filtered.ToList());
+        }
+
+        private void DisplayPrompts(List<Prompt> prompts)
+        {
+            // Clear existing prompt cards
+            PromptsContainer.Children.Clear();
+
+            // Generate prompt cards dynamically
+            if (prompts.Count == 0)
+            {
+                var emptyText = new TextBlock
+                {
+                    Text = currentAIFilter != "All" || currentModelFilter != "All" || currentTagFilter != "All" || showFavoritesOnly
+                        ? "No prompts match the current filters.\nTry adjusting your filters."
+                        : "No prompts yet. Click '➕ New Prompt' to get started!",
+                    FontSize = 16,
+                    Foreground = (System.Windows.Media.Brush)Application.Current.Resources["TextSecondaryBrush"],
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    TextAlignment = TextAlignment.Center,
+                    Margin = new Thickness(0, 40, 0, 0)
+                };
+                PromptsContainer.Children.Add(emptyText);
+            }
+            else
+            {
+                foreach (var prompt in prompts)
+                {
+                    PromptsContainer.Children.Add(CreatePromptCard(prompt));
+                }
+            }
+
+            // Update count with filtered number
+            PromptCountText.Text = $"({prompts.Count})";
         }
 
         private System.Windows.Controls.Border CreatePromptCard(Prompt prompt)

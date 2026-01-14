@@ -102,23 +102,33 @@
                 <TextBlock Text="AI Provider *" FontSize="14" FontWeight="SemiBold" 
                            Foreground="{DynamicResource TextBrush}" Margin="0,0,0,8"/>
                 <ComboBox x:Name="AIProviderComboBox" Style="{StaticResource ModernComboBoxStyle}"
-                          Margin="0,0,0,20" SelectionChanged="AIProviderComboBox_SelectionChanged">
+                          Margin="0,0,0,4" SelectionChanged="AIProviderComboBox_SelectionChanged"
+                          IsEditable="True">
                     <ComboBoxItem Content="ChatGPT" IsSelected="True"/>
                     <ComboBoxItem Content="Claude"/>
                     <ComboBoxItem Content="Gemini"/>
                     <ComboBoxItem Content="Copilot"/>
+                    <ComboBoxItem Content="DeepSeek"/>
+                    <ComboBoxItem Content="Grok"/>
+                    <ComboBoxItem Content="Perplexity"/>
                     <ComboBoxItem Content="Unknown"/>
                 </ComboBox>
+                <TextBlock Text="You can type a custom AI provider name" 
+                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" 
+                           Margin="0,0,0,20"/>
 
                 <!-- Model Version -->
                 <TextBlock Text="Model Version *" FontSize="14" FontWeight="SemiBold" 
                            Foreground="{DynamicResource TextBrush}" Margin="0,0,0,8"/>
                 <ComboBox x:Name="ModelVersionComboBox" Style="{StaticResource ModernComboBoxStyle}"
-                          Margin="0,0,0,20">
+                          Margin="0,0,0,4" IsEditable="True">
                     <ComboBoxItem Content="GPT-4" IsSelected="True"/>
                     <ComboBoxItem Content="GPT-4 Turbo"/>
                     <ComboBoxItem Content="GPT-3.5"/>
                 </ComboBox>
+                <TextBlock Text="You can type a custom model version" 
+                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" 
+                           Margin="0,0,0,20"/>
 
                 <!-- Tags -->
                 <TextBlock Text="Tags (optional)" FontSize="14" FontWeight="SemiBold" 
