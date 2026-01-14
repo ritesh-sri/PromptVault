@@ -1,24 +1,37 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-    <SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
-    <NuGetAuditMode>all</NuGetAuditMode>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
+		<NuGetAuditMode>all</NuGetAuditMode>
+		<Authors>Ritesh Kumar Srivstava</Authors>
+		<Company>Open Source</Company>
+		<Product>PromptVault</Product>
+		<Description>AI Prompt Management Tool for Windows</Description>
+		<Copyright>Copyright © 2026</Copyright>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/ritesh-sri/PromptVault</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/ritesh-sri/PromptVault</PackageProjectUrl>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Helpers\" />
-    <Folder Include="Views\" />
-  </ItemGroup>
+	<ItemGroup>
+		<Folder Include="Helpers\" />
+		<Folder Include="Views\" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="33.1.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-  </ItemGroup>
+	<ItemGroup>
+		<!-- Windows Forms for FolderBrowserDialog -->
+		<Reference Include="System.Windows.Forms" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CsvHelper" Version="33.1.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+	</ItemGroup>
 
 </Project>

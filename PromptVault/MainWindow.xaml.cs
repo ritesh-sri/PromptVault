@@ -77,24 +77,24 @@ namespace PromptVault
             if (darkMode)
             {
                 // Apply Dark Theme
-                resources["BackgroundBrush"] = resources["DarkBackground"];
-                resources["SurfaceBrush"] = resources["DarkSurface"];
-                resources["BorderBrush"] = resources["DarkBorder"];
-                resources["TextBrush"] = resources["DarkText"];
-                resources["TextSecondaryBrush"] = resources["DarkTextSecondary"];
-                resources["AccentBrush"] = resources["DarkAccent"];
-                resources["HoverBrush"] = resources["DarkHover"];
+                resources["BackgroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E1E1E"));
+                resources["SurfaceBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2D2D2D"));
+                resources["BorderBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3E3E3E"));
+                resources["TextBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0"));
+                resources["TextSecondaryBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B0B0B0"));
+                resources["AccentBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4FC3F7"));
+                resources["HoverBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#383838"));
             }
             else
             {
                 // Apply Light Theme
-                resources["BackgroundBrush"] = resources["LightBackground"];
-                resources["SurfaceBrush"] = resources["LightSurface"];
-                resources["BorderBrush"] = resources["LightBorder"];
-                resources["TextBrush"] = resources["LightText"];
-                resources["TextSecondaryBrush"] = resources["LightTextSecondary"];
-                resources["AccentBrush"] = resources["LightAccent"];
-                resources["HoverBrush"] = resources["LightHover"];
+                resources["BackgroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFFFFF"));
+                resources["SurfaceBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F5F5F5"));
+                resources["BorderBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0"));
+                resources["TextBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#212121"));
+                resources["TextSecondaryBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#757575"));
+                resources["AccentBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2196F3"));
+                resources["HoverBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EEEEEE"));
             }
         }
 

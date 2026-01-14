@@ -3,6 +3,31 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <!-- Global Application Resources -->
+        <!-- Light Theme Colors -->
+        <SolidColorBrush x:Key="LightBackground" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="LightSurface" Color="#F5F5F5"/>
+        <SolidColorBrush x:Key="LightBorder" Color="#E0E0E0"/>
+        <SolidColorBrush x:Key="LightText" Color="#212121"/>
+        <SolidColorBrush x:Key="LightTextSecondary" Color="#757575"/>
+        <SolidColorBrush x:Key="LightAccent" Color="#2196F3"/>
+        <SolidColorBrush x:Key="LightHover" Color="#EEEEEE"/>
+
+        <!-- Dark Theme Colors -->
+        <SolidColorBrush x:Key="DarkBackground" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="DarkSurface" Color="#2D2D2D"/>
+        <SolidColorBrush x:Key="DarkBorder" Color="#3E3E3E"/>
+        <SolidColorBrush x:Key="DarkText" Color="#E0E0E0"/>
+        <SolidColorBrush x:Key="DarkTextSecondary" Color="#B0B0B0"/>
+        <SolidColorBrush x:Key="DarkAccent" Color="#4FC3F7"/>
+        <SolidColorBrush x:Key="DarkHover" Color="#383838"/>
+
+        <!-- Dynamic Theme Resources (Default: Light) -->
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#F5F5F5"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#E0E0E0"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#212121"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#757575"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#2196F3"/>
+        <SolidColorBrush x:Key="HoverBrush" Color="#EEEEEE"/>
     </Application.Resources>
 </Application>
