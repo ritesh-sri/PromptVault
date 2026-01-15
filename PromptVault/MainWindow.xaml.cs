@@ -249,6 +249,12 @@ namespace PromptVault
             dialog.ShowDialog();
         }
 
+        private void StatisticsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new StatisticsDialog(databaseService);
+            dialog.ShowDialog();
+        }
+
         private void LoadPrompts()
         {
             try

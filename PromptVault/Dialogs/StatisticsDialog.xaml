@@ -1,0 +1,322 @@
+﻿<Window x:Class="PromptVault.Dialogs.StatisticsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="📊 Statistics Dashboard"
+        Height="700"
+        Width="1000"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize"
+        Background="{DynamicResource BackgroundBrush}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="📊 Statistics Dashboard" 
+                           FontSize="24" 
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource TextBrush}"/>
+                <TextBlock Text="Overview of your prompt library and usage patterns"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Margin="0,5,0,0"/>
+            </StackPanel>
+
+            <Button x:Name="RefreshButton"
+                    Grid.Column="1"
+                    Content="🔄 Refresh"
+                    Style="{DynamicResource IconButtonStyle}"
+                    Padding="12,8"
+                    FontSize="13"
+                    Click="RefreshButton_Click"/>
+        </Grid>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Overview Stats -->
+                <Border Background="{DynamicResource CardBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="20"
+                        Margin="0,0,0,20">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Total Prompts -->
+                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                            <TextBlock Text="📝" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TotalPromptsText" 
+                                       Text="0" 
+                                       FontSize="32" 
+                                       FontWeight="Bold"
+                                       Foreground="#2196F3"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,5,0,0"/>
+                            <TextBlock Text="Total Prompts" 
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+
+                        <!-- Favorites -->
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                            <TextBlock Text="⭐" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="FavoriteCountText" 
+                                       Text="0" 
+                                       FontSize="32" 
+                                       FontWeight="Bold"
+                                       Foreground="#FFC107"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,5,0,0"/>
+                            <TextBlock Text="Favorites" 
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+
+                        <!-- Total Usage -->
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                            <TextBlock Text="📊" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TotalUsageText" 
+                                       Text="0" 
+                                       FontSize="32" 
+                                       FontWeight="Bold"
+                                       Foreground="#4CAF50"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,5,0,0"/>
+                            <TextBlock Text="Total Uses" 
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+
+                        <!-- Average Per Day -->
+                        <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                            <TextBlock Text="📅" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="AvgPerDayText" 
+                                       Text="0" 
+                                       FontSize="32" 
+                                       FontWeight="Bold"
+                                       Foreground="#9C27B0"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,5,0,0"/>
+                            <TextBlock Text="Prompts/Day" 
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Cost & Token Stats -->
+                <Border Background="{DynamicResource CardBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="20"
+                        Margin="0,0,0,20">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                            <TextBlock Text="💰 Estimated Total Cost" 
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="EstimatedCostText" 
+                                       Text="$0.00" 
+                                       FontSize="28" 
+                                       FontWeight="Bold"
+                                       Foreground="#4CAF50"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,8,0,0"/>
+                            <TextBlock Text="Based on usage count and model pricing" 
+                                       FontSize="10"
+                                       FontStyle="Italic"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                            <TextBlock Text="🔤 Total Tokens Used" 
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TotalTokensText" 
+                                       Text="0" 
+                                       FontSize="28" 
+                                       FontWeight="Bold"
+                                       Foreground="#2196F3"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,8,0,0"/>
+                            <TextBlock Text="Estimated based on prompt content" 
+                                       FontSize="10"
+                                       FontStyle="Italic"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Two Column Layout -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Column -->
+                    <StackPanel Grid.Column="0">
+                        <!-- Most Used Prompts -->
+                        <Border Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="20"
+                                Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="🔥 Most Used Prompts" 
+                                           FontSize="16" 
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,12"/>
+                                <StackPanel x:Name="MostUsedPanel"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Platform Breakdown -->
+                        <Border Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="20"
+                                Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="🤖 Prompts by Platform" 
+                                           FontSize="16" 
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,12"/>
+                                <StackPanel x:Name="PlatformBreakdownPanel"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Cost by Platform -->
+                        <Border Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="20">
+                            <StackPanel>
+                                <TextBlock Text="💵 Cost by Platform" 
+                                           FontSize="16" 
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,12"/>
+                                <StackPanel x:Name="CostByPlatformPanel"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Right Column -->
+                    <StackPanel Grid.Column="2">
+                        <!-- Recently Added -->
+                        <Border Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="20"
+                                Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="✨ Recently Added" 
+                                           FontSize="16" 
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,12"/>
+                                <StackPanel x:Name="RecentlyAddedPanel"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Model Breakdown -->
+                        <Border Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="20"
+                                Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="🎯 Top Models" 
+                                           FontSize="16" 
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,12"/>
+                                <StackPanel x:Name="ModelBreakdownPanel"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Popular Tags -->
+                        <Border Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="20">
+                            <StackPanel>
+                                <TextBlock Text="🏷️ Popular Tags" 
+                                           FontSize="16" 
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,12"/>
+                                <WrapPanel x:Name="PopularTagsPanel" Orientation="Horizontal"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" 
+                BorderBrush="{DynamicResource BorderBrush}" 
+                BorderThickness="0,1,0,0" 
+                Padding="0,15,0,0" 
+                Margin="0,15,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="CloseButton"
+                        Content="✓ Close"
+                        Style="{DynamicResource PrimaryButtonStyle}"
+                        Padding="20,10"
+                        Click="CloseButton_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

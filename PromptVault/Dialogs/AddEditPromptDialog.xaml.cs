@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using PromptVault.Models;
+using PromptVault.Services;
 
 namespace PromptVault.Dialogs
 {
@@ -22,6 +23,10 @@ namespace PromptVault.Dialogs
             // Allow custom AI providers and models
             AIProviderComboBox.IsEditable = true;
             ModelVersionComboBox.IsEditable = true;
+
+            // Subscribe to model version changes for cost calculation
+            ModelVersionComboBox.SelectionChanged += ModelVersionComboBox_SelectionChanged;
+            ModelVersionComboBox.DropDownClosed += (s, e) => UpdateCostEstimate();
         }
 
         public AddEditPromptDialog(Prompt prompt)
@@ -35,6 +40,10 @@ namespace PromptVault.Dialogs
             // Allow custom AI providers and models
             AIProviderComboBox.IsEditable = true;
             ModelVersionComboBox.IsEditable = true;
+
+            // Subscribe to model version changes
+            ModelVersionComboBox.SelectionChanged += ModelVersionComboBox_SelectionChanged;
+            ModelVersionComboBox.DropDownClosed += (s, e) => UpdateCostEstimate();
         }
 
         private void InitializeForAdd()
@@ -76,6 +85,7 @@ namespace PromptVault.Dialogs
             SetComboBoxValue(ModelVersionComboBox, prompt.ModelVersion);
 
             UpdateCharacterCount();
+            UpdateCostEstimate();
         }
 
         private void SetComboBoxValue(ComboBox comboBox, string value)
@@ -96,11 +106,16 @@ namespace PromptVault.Dialogs
         {
             if (ModelVersionComboBox == null) return;
 
-            var selectedProvider = AIProviderComboBox.Text; // Use Text instead of SelectedItem
+            var selectedProvider = AIProviderComboBox.Text;
             if (!string.IsNullOrEmpty(selectedProvider))
             {
                 UpdateModelVersions(selectedProvider);
             }
+        }
+
+        private void ModelVersionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateCostEstimate();
         }
 
         private void UpdateModelVersions(string provider)
@@ -109,7 +124,6 @@ namespace PromptVault.Dialogs
 
             var versions = new List<string>();
 
-            // Handle custom providers by checking the text
             if (provider.Contains("ChatGPT") || provider == "ChatGPT")
             {
                 versions = new List<string> { "GPT-4", "GPT-4 Turbo", "GPT-3.5", "GPT-4o", "o1", "o1-mini" };
@@ -128,7 +142,6 @@ namespace PromptVault.Dialogs
             }
             else
             {
-                // For custom providers, just add "Default" option
                 versions = new List<string> { "Default", "Latest" };
             }
 
@@ -137,7 +150,6 @@ namespace PromptVault.Dialogs
                 ModelVersionComboBox.Items.Add(new ComboBoxItem { Content = version });
             }
 
-            // If editing and the model exists, select it
             if (IsEditMode && EditingPrompt != null)
             {
                 SetComboBoxValue(ModelVersionComboBox, EditingPrompt.ModelVersion);
@@ -151,14 +163,45 @@ namespace PromptVault.Dialogs
         private void ContentTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             UpdateCharacterCount();
+            UpdateCostEstimate();
         }
 
         private void UpdateCharacterCount()
         {
             int charCount = ContentTextBox.Text.Length;
-            int estimatedTokens = (int)(charCount / 4.0); // Rough estimate: 1 token ≈ 4 characters
+            var breakdown = TokenEstimator.GetTokenBreakdown(ContentTextBox.Text);
 
-            CharacterCountText.Text = $"Characters: {charCount:N0} | Estimated tokens: ~{estimatedTokens:N0}";
+            CharacterCountText.Text = $"Characters: {charCount:N0} | Words: {breakdown.Words:N0} | " +
+                                     $"Tokens: ~{breakdown.Tokens:N0} | Lines: {breakdown.Lines}";
+        }
+
+        private void UpdateCostEstimate()
+        {
+            if (CostEstimatePanel == null || string.IsNullOrEmpty(ContentTextBox?.Text))
+                return;
+
+            string modelVersion = ModelVersionComboBox.Text;
+            if (string.IsNullOrWhiteSpace(modelVersion))
+            {
+                modelVersion = (ModelVersionComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "GPT-4";
+            }
+
+            int inputTokens = TokenEstimator.EstimateTokens(ContentTextBox.Text);
+            var costEstimate = TokenEstimator.CalculateCost(modelVersion, inputTokens);
+
+            // Update UI
+            InputTokensText.Text = TokenEstimator.FormatTokens(costEstimate.InputTokens);
+            OutputTokensText.Text = TokenEstimator.FormatTokens(costEstimate.OutputTokens);
+            InputCostText.Text = TokenEstimator.FormatCost(costEstimate.InputCost);
+            OutputCostText.Text = TokenEstimator.FormatCost(costEstimate.OutputCost);
+            TotalCostText.Text = TokenEstimator.FormatCost(costEstimate.TotalCost);
+
+            // Show pricing info
+            var pricing = TokenEstimator.GetModelPricing(modelVersion);
+            PricingInfoText.Text = $"Pricing: ${pricing.InputCost:F2}/1M input, ${pricing.OutputCost:F2}/1M output tokens";
+
+            // Make panel visible
+            CostEstimatePanel.Visibility = Visibility.Visible;
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -180,14 +223,14 @@ namespace PromptVault.Dialogs
                 return;
             }
 
-            // Get AI Provider (support custom text or selected item)
+            // Get AI Provider
             string aiProvider = AIProviderComboBox.Text;
             if (string.IsNullOrWhiteSpace(aiProvider))
             {
                 aiProvider = (AIProviderComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Unknown";
             }
 
-            // Get Model Version (support custom text or selected item)
+            // Get Model Version
             string modelVersion = ModelVersionComboBox.Text;
             if (string.IsNullOrWhiteSpace(modelVersion))
             {
@@ -203,8 +246,6 @@ namespace PromptVault.Dialogs
                 EditingPrompt.ModelVersion = modelVersion.Trim();
                 EditingPrompt.IsFavorite = FavoriteCheckBox.IsChecked ?? false;
                 EditingPrompt.UpdatedAt = DateTime.Now;
-
-                // Parse tags
                 EditingPrompt.Tags = ParseTags(TagsTextBox.Text);
             }
             else

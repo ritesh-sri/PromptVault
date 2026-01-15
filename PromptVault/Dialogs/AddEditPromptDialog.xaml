@@ -159,6 +159,103 @@
                 <TextBlock x:Name="CharacterCountText" Text="Characters: 0 | Estimated tokens: ~0" 
                            FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" 
                            Margin="0,4,0,20" HorizontalAlignment="Right"/>
+				<!-- Cost Estimate Panel -->
+				<Border x:Name="CostEstimatePanel"
+						Visibility="Collapsed"
+						Background="{DynamicResource CardBrush}"
+						BorderBrush="{DynamicResource BorderBrush}"
+						BorderThickness="1"
+						CornerRadius="8"
+						Padding="16"
+						Margin="0,12,0,0">
+					<Grid>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
+
+						<!-- Header -->
+						<TextBlock Grid.Row="0"
+								   Text="💰 Cost Estimate (per API call)"
+								   FontSize="14"
+								   FontWeight="SemiBold"
+								   Foreground="{DynamicResource TextBrush}"
+								   Margin="0,0,0,12"/>
+
+						<!-- Cost Details Grid -->
+						<Grid Grid.Row="1">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="Auto"/>
+							</Grid.RowDefinitions>
+
+							<!-- Input -->
+							<StackPanel Grid.Column="0">
+								<TextBlock Text="Input Tokens"
+										   FontSize="11"
+										   Foreground="{DynamicResource TextSecondaryBrush}"/>
+								<TextBlock x:Name="InputTokensText"
+										   Text="0"
+										   FontSize="16"
+										   FontWeight="Bold"
+										   Foreground="#2196F3"
+										   Margin="0,4,0,0"/>
+								<TextBlock x:Name="InputCostText"
+										   Text="$0.00"
+										   FontSize="12"
+										   Foreground="#4CAF50"
+										   Margin="0,2,0,0"/>
+							</StackPanel>
+
+							<!-- Output (Estimated) -->
+							<StackPanel Grid.Column="1">
+								<TextBlock Text="Output Tokens (est.)"
+										   FontSize="11"
+										   Foreground="{DynamicResource TextSecondaryBrush}"/>
+								<TextBlock x:Name="OutputTokensText"
+										   Text="0"
+										   FontSize="16"
+										   FontWeight="Bold"
+										   Foreground="#FF9800"
+										   Margin="0,4,0,0"/>
+								<TextBlock x:Name="OutputCostText"
+										   Text="$0.00"
+										   FontSize="12"
+										   Foreground="#4CAF50"
+										   Margin="0,2,0,0"/>
+							</StackPanel>
+
+							<!-- Total -->
+							<StackPanel Grid.Column="2">
+								<TextBlock Text="Total Cost"
+										   FontSize="11"
+										   Foreground="{DynamicResource TextSecondaryBrush}"/>
+								<TextBlock x:Name="TotalCostText"
+										   Text="$0.00"
+										   FontSize="18"
+										   FontWeight="Bold"
+										   Foreground="#4CAF50"
+										   Margin="0,4,0,0"/>
+							</StackPanel>
+						</Grid>
+
+						<!-- Pricing Info -->
+						<TextBlock x:Name="PricingInfoText"
+								   Grid.Row="2"
+								   Text="Pricing info"
+								   FontSize="10"
+								   FontStyle="Italic"
+								   Foreground="{DynamicResource TextSecondaryBrush}"
+								   Margin="0,12,0,0"
+								   TextWrapping="Wrap"/>
+					</Grid>
+				</Border>
 
                 <!-- Favorite Checkbox -->
                 <CheckBox x:Name="FavoriteCheckBox" Content="⭐ Mark as Favorite" 

@@ -302,12 +302,12 @@ All settings accessible through Settings dialog:
 - ✅ Tag management
 - ✅ Favorites system
 - ✅ Usage tracking
+- ✅ Token Counter
+- ✅ Statistics Dashboard
 
 ### 🚧 v1.2.0 (In Progress)
-- [ ] **Token Counter** - Real-time token estimation with cost calculation
 - [ ] **Prompt Templates** - Variables like {{topic}} for reusable prompts
 - [ ] **Keyboard Shortcuts** - Ctrl+N, Ctrl+F, etc. for power users
-- [ ] **Statistics Dashboard** - Usage analytics and insights
 - [ ] **Export Formats** - Markdown, JSON export options
 - [ ] **Multi-Select** - Bulk operations on multiple prompts
 

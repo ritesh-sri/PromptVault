@@ -59,6 +59,13 @@
 
                 <!-- Header Actions -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                    <Button x:Name="StatisticsButton"
+                            Content="📊"
+                            Style="{DynamicResource IconButtonStyle}"
+                            Margin="0,0,8,0"
+                            Click="StatisticsButton_Click"
+                            ToolTip="View statistics dashboard"/>   
+
                     <Button x:Name="ThemeToggleButton" 
                             Content="🌙"
                             Style="{StaticResource IconButtonStyle}"
