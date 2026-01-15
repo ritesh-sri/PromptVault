@@ -12,13 +12,20 @@ namespace PromptVault.Dialogs
     {
         private readonly DatabaseService databaseService;
         private readonly ImportService importService;
+        private readonly ThemeManager themeManager;
+        private readonly HotkeyManager hotkeyManager;
+        private readonly SystemTrayManager trayManager;
         private string currentPanel = "General";
 
-        public SettingsDialog(DatabaseService dbService, ImportService impService)
+        public SettingsDialog(DatabaseService dbService, ImportService impService, HotkeyManager hkManager, SystemTrayManager sysTrayManager)
         {
             InitializeComponent();
             databaseService = dbService;
             importService = impService;
+            themeManager = ThemeManager.Instance;
+            hotkeyManager = hkManager;
+            trayManager = sysTrayManager;
+
             LoadSettings();
             UpdateNavigationHighlight();
         }
@@ -28,11 +35,36 @@ namespace PromptVault.Dialogs
             // Load database path
             DatabasePathText.Text = databaseService.GetDatabasePath();
 
-            // TODO: Load from settings file when implemented
-            ThemeComboBox.SelectedIndex = 1; // Dark theme default
+            // Load theme setting
+            if (themeManager.IsDarkMode)
+            {
+                ThemeComboBox.SelectedIndex = 1; // Dark Theme
+            }
+            else
+            {
+                ThemeComboBox.SelectedIndex = 0; // Light Theme
+            }
+
+            // Load other settings
             StartupCheckBox.IsChecked = CheckStartupEnabled();
-            MinimizeToTrayCheckBox.IsChecked = false;
+            MinimizeToTrayCheckBox.IsChecked = trayManager.IsMinimizeToTrayEnabled;
             AutoBackupCheckBox.IsChecked = true;
+
+            // Load hotkeys
+            OpenHotkeyTextBox.Text = hotkeyManager.GetOpenHotkeyString();
+            ClipboardHotkeyTextBox.Text = hotkeyManager.GetClipboardHotkeyString();
+
+            // Subscribe to theme combo box changes
+            ThemeComboBox.SelectionChanged += ThemeComboBox_SelectionChanged;
+        }
+
+        private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ThemeComboBox == null || !this.IsLoaded) return;
+
+            // Apply theme immediately when changed
+            bool isDark = ThemeComboBox.SelectedIndex == 1;
+            themeManager.SetTheme(isDark);
         }
 
         private bool CheckStartupEnabled()
@@ -160,23 +192,44 @@ namespace PromptVault.Dialogs
 
         private void ChangeOpenHotkey_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("🔧 Hotkey Customization\n\n" +
-                           "This feature is coming in version 0.2.0!\n\n" +
-                           "Current hotkey: Ctrl + Shift + V\n\n" +
-                           "Stay tuned for updates where you'll be able to:\n" +
-                           "• Choose any key combination\n" +
-                           "• Set multiple hotkeys\n" +
-                           "• Create custom shortcuts",
-                "Coming Soon", MessageBoxButton.OK, MessageBoxImage.Information);
+            var dialog = new HotkeyInputDialog();
+            if (dialog.ShowDialog() == true)
+            {
+                if (hotkeyManager.SetOpenHotkey(dialog.CapturedModifiers, dialog.CapturedKey))
+                {
+                    OpenHotkeyTextBox.Text = hotkeyManager.GetOpenHotkeyString();
+                    MessageBox.Show("✅ Hotkey Updated!\n\nYour new hotkey has been set successfully.",
+                        "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("❌ Failed to Set Hotkey\n\n" +
+                                   "This key combination might already be in use by another application.\n" +
+                                   "Please try a different combination.",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
         }
 
         private void ChangeClipboardHotkey_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("🔧 Hotkey Customization\n\n" +
-                           "This feature is coming in version 0.2.0!\n\n" +
-                           "Current hotkey: Ctrl + Shift + C\n\n" +
-                           "Stay tuned for updates!",
-                "Coming Soon", MessageBoxButton.OK, MessageBoxImage.Information);
+            var dialog = new HotkeyInputDialog();
+            if (dialog.ShowDialog() == true)
+            {
+                if (hotkeyManager.SetClipboardHotkey(dialog.CapturedModifiers, dialog.CapturedKey))
+                {
+                    ClipboardHotkeyTextBox.Text = hotkeyManager.GetClipboardHotkeyString();
+                    MessageBox.Show("✅ Hotkey Updated!\n\nYour new hotkey has been set successfully.",
+                        "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("❌ Failed to Set Hotkey\n\n" +
+                                   "This key combination might already be in use by another application.\n" +
+                                   "Please try a different combination.",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
         }
 
         private void OpenDatabaseFolder_Click(object sender, RoutedEventArgs e)
@@ -314,19 +367,16 @@ namespace PromptVault.Dialogs
         {
             try
             {
-                // Use SaveFileDialog to get a folder path by asking user to save a dummy file
-                // Then use the directory of that file
                 var saveDialog = new SaveFileDialog
                 {
                     Title = "Select Export Folder",
-                    FileName = "Select this folder", // Default name
+                    FileName = "Select this folder",
                     Filter = "Folder Selection|*.folder",
                     CheckPathExists = true
                 };
 
                 if (saveDialog.ShowDialog() == true)
                 {
-                    // Get the directory from the selected path
                     string folderPath = Path.GetDirectoryName(saveDialog.FileName);
 
                     if (!Directory.Exists(folderPath))
@@ -379,14 +429,12 @@ namespace PromptVault.Dialogs
                     {
                         string dbPath = databaseService.GetDatabasePath();
 
-                        // Create a backup before deleting
                         string backupPath = Path.Combine(
                             Path.GetDirectoryName(dbPath),
                             $"pre_delete_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db"
                         );
                         File.Copy(dbPath, backupPath, true);
 
-                        // Delete the database
                         File.Delete(dbPath);
 
                         MessageBox.Show("✅ All Data Deleted\n\n" +
@@ -483,7 +531,7 @@ namespace PromptVault.Dialogs
 
             if (result == MessageBoxResult.Yes)
             {
-                ThemeComboBox.SelectedIndex = 1;
+                ThemeComboBox.SelectedIndex = 0; // Light theme
                 StartupCheckBox.IsChecked = false;
                 MinimizeToTrayCheckBox.IsChecked = false;
                 AutoBackupCheckBox.IsChecked = true;
@@ -503,11 +551,15 @@ namespace PromptVault.Dialogs
                 // Apply startup setting
                 SetStartup(StartupCheckBox.IsChecked ?? false);
 
-                // TODO: Save other settings to file when implemented
+                // Apply tray setting
+                trayManager.SetMinimizeToTray(MinimizeToTrayCheckBox.IsChecked ?? false);
+                SaveTraySettings();
+
+                // Theme is already applied by ThemeComboBox_SelectionChanged
+                // Hotkeys are already applied when changed
 
                 MessageBox.Show("✅ Settings Saved!\n\n" +
-                               "Your preferences have been saved successfully.\n\n" +
-                               "Some changes may require restarting PromptVault.",
+                               "Your preferences have been saved successfully.",
                     "Settings Saved", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 DialogResult = true;
@@ -518,6 +570,45 @@ namespace PromptVault.Dialogs
                 MessageBox.Show($"Failed to save settings: {ex.Message}",
                     "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void SaveTraySettings()
+        {
+            try
+            {
+                string settingsPath = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "PromptVault",
+                    "settings.txt"
+                );
+
+                var lines = new List<string>();
+
+                // Preserve existing settings
+                if (System.IO.File.Exists(settingsPath))
+                {
+                    var existingLines = System.IO.File.ReadAllLines(settingsPath);
+                    foreach (var line in existingLines)
+                    {
+                        if (!line.StartsWith("MinimizeToTray="))
+                        {
+                            lines.Add(line);
+                        }
+                    }
+                }
+
+                // Add tray setting
+                lines.Add($"MinimizeToTray={MinimizeToTrayCheckBox.IsChecked ?? false}");
+
+                string appDataPath = System.IO.Path.GetDirectoryName(settingsPath);
+                if (!System.IO.Directory.Exists(appDataPath))
+                {
+                    System.IO.Directory.CreateDirectory(appDataPath);
+                }
+
+                System.IO.File.WriteAllLines(settingsPath, lines);
+            }
+            catch { }
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

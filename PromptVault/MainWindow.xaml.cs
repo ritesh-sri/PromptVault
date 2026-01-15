@@ -2,7 +2,6 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Runtime.InteropServices;
 using PromptVault.Services;
 using PromptVault.Dialogs;
 using System.Collections.Generic;
@@ -14,15 +13,17 @@ namespace PromptVault
 {
     public partial class MainWindow : Window
     {
-        private bool isDarkMode = false;
-        private GlobalHotkey globalHotkey;
+        private HotkeyManager hotkeyManager;
+        private SystemTrayManager trayManager;
         private DatabaseService databaseService;
         private ImportService importService;
+        private ThemeManager themeManager;
         private List<Prompt> allPrompts;
         private string currentAIFilter = "All";
         private string currentModelFilter = "All";
         private string currentTagFilter = "All";
         private bool showFavoritesOnly = false;
+        private bool hasShownFirstMinimizeTip = false;
 
         public MainWindow()
         {
@@ -31,87 +32,151 @@ namespace PromptVault
             // Initialize services
             databaseService = new DatabaseService();
             importService = new ImportService(databaseService);
+            themeManager = ThemeManager.Instance;
+            trayManager = new SystemTrayManager(this);
+            hotkeyManager = new HotkeyManager(this);
 
-            // Initialize hotkey after window is loaded
+            // Initialize theme
+            themeManager.InitializeTheme();
+            UpdateThemeButton();
+
+            // Subscribe to theme changes
+            themeManager.ThemeChanged += (s, isDark) =>
+            {
+                UpdateThemeButton();
+                if (allPrompts != null && allPrompts.Count > 0)
+                {
+                    ApplyFiltersAndDisplay();
+                }
+            };
+
+            // Subscribe to tray events
+            trayManager.OpenRequested += (s, e) => RestoreFromTray();
+            trayManager.ExitRequested += (s, e) => ExitApplication();
+
+            // Load settings
+            LoadTraySettings();
+
+            // Window events
             this.Loaded += MainWindow_Loaded;
+            this.StateChanged += MainWindow_StateChanged;
+            this.Closing += MainWindow_Closing;
 
-            // Set initial theme icon
-            ThemeToggleButton.Content = isDarkMode ? "☀️" : "🌙";
-
-            LoadTheme();
             LoadPrompts();
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Register hotkey after window handle is created
-            InitializeHotkey();
+            // Initialize hotkeys after window handle is created
+            hotkeyManager.Initialize();
 
-            // Setup filter event handlers
+            // Subscribe to hotkey events
+            hotkeyManager.OpenApplicationRequested += (s, ev) =>
+            {
+                Dispatcher.Invoke(() => RestoreFromTray());
+            };
+
+            hotkeyManager.QuickCaptureRequested += (s, ev) =>
+            {
+                Dispatcher.Invoke(() => QuickCaptureFromClipboard());
+            };
+
             SetupFilters();
         }
 
-        private void InitializeHotkey()
+        private void MainWindow_StateChanged(object sender, EventArgs e)
         {
-            // Register Ctrl+Shift+V to open the app
-            try
+            if (WindowState == WindowState.Minimized)
             {
-                globalHotkey = new GlobalHotkey(ModifierKeys.Control | ModifierKeys.Shift, Key.V, this);
-                globalHotkey.Register();
-            }
-            catch (Exception ex)
-            {
-                // Show warning but don't crash the app
-                MessageBox.Show($"Could not register global hotkey (Ctrl+Shift+V).\n\nThe app will still work, but you'll need to open it manually.\n\nError: {ex.Message}",
-                    "PromptVault - Hotkey Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                if (trayManager.IsMinimizeToTrayEnabled)
+                {
+                    trayManager.HandleWindowStateChange(WindowState);
+
+                    if (!hasShownFirstMinimizeTip)
+                    {
+                        trayManager.ShowBalloonTip(
+                            "PromptVault",
+                            $"Running in background. Press {hotkeyManager.GetOpenHotkeyString()} to open."
+                        );
+                        hasShownFirstMinimizeTip = true;
+                    }
+                }
             }
         }
 
-        private void LoadTheme()
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            // Load saved theme preference (placeholder for settings)
-            // For now, starts with light theme
-            ApplyTheme(isDarkMode);
+            // If minimize to tray is enabled, just minimize instead of closing
+            if (trayManager.IsMinimizeToTrayEnabled)
+            {
+                e.Cancel = true;
+                WindowState = WindowState.Minimized;
+                Hide();
+                trayManager.ShowInTray();
+            }
+        }
+
+        private void LoadTraySettings()
+        {
+            try
+            {
+                string settingsPath = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "PromptVault",
+                    "settings.txt"
+                );
+
+                if (System.IO.File.Exists(settingsPath))
+                {
+                    var lines = System.IO.File.ReadAllLines(settingsPath);
+                    foreach (var line in lines)
+                    {
+                        if (line.StartsWith("MinimizeToTray="))
+                        {
+                            bool enabled = line.Contains("True");
+                            trayManager.SetMinimizeToTray(enabled);
+                            if (enabled)
+                            {
+                                trayManager.ShowInTray();
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void RestoreFromTray()
+        {
+            trayManager.RestoreWindow();
+        }
+
+        private void ExitApplication()
+        {
+            trayManager.SetMinimizeToTray(false); // Disable to allow actual exit
+            Application.Current.Shutdown();
+        }
+
+        private void QuickCaptureFromClipboard()
+        {
+            RestoreFromTray();
+            AddFromClipboardButton_Click(null, null);
+        }
+
+        private void UpdateThemeButton()
+        {
+            ThemeToggleButton.Content = themeManager.IsDarkMode ? "☀️" : "🌙";
+            ThemeToggleButton.ToolTip = themeManager.IsDarkMode ?
+                "Switch to Light Mode" : "Switch to Dark Mode";
         }
 
         private void ThemeToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            isDarkMode = !isDarkMode;
-            ApplyTheme(isDarkMode);
-            ThemeToggleButton.Content = isDarkMode ? "☀️" : "🌙";
+            themeManager.ToggleTheme();
 
-            // Refresh the prompts to update colors
             if (allPrompts != null && allPrompts.Count > 0)
             {
                 ApplyFiltersAndDisplay();
-            }
-        }
-
-        private void ApplyTheme(bool darkMode)
-        {
-            var resources = Application.Current.Resources;
-
-            if (darkMode)
-            {
-                // Apply Dark Theme
-                resources["BackgroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E1E1E"));
-                resources["SurfaceBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2D2D2D"));
-                resources["BorderBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3E3E3E"));
-                resources["TextBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0"));
-                resources["TextSecondaryBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B0B0B0"));
-                resources["AccentBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4FC3F7"));
-                resources["HoverBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#383838"));
-            }
-            else
-            {
-                // Apply Light Theme
-                resources["BackgroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFFFFF"));
-                resources["SurfaceBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F5F5F5"));
-                resources["BorderBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0"));
-                resources["TextBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#212121"));
-                resources["TextSecondaryBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#757575"));
-                resources["AccentBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2196F3"));
-                resources["HoverBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EEEEEE"));
             }
         }
 
@@ -120,12 +185,9 @@ namespace PromptVault
             var dialog = new AddEditPromptDialog();
             if (dialog.ShowDialog() == true)
             {
-                // Save the new prompt
                 databaseService.AddPrompt(dialog.EditingPrompt);
                 MessageBox.Show("Prompt saved successfully!",
                     "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                // Reload prompts
                 LoadPrompts();
             }
         }
@@ -138,7 +200,6 @@ namespace PromptVault
                 {
                     string clipboardText = Clipboard.GetText();
 
-                    // Open dialog with clipboard content pre-filled
                     var dialog = new AddEditPromptDialog();
                     dialog.ContentTextBox.Text = clipboardText;
                     dialog.TitleTextBox.Text = "Clipboard Prompt - " + DateTime.Now.ToString("yyyy-MM-dd HH:mm");
@@ -148,6 +209,13 @@ namespace PromptVault
                     if (dialog.ShowDialog() == true)
                     {
                         databaseService.AddPrompt(dialog.EditingPrompt);
+
+                        // Show notification
+                        if (trayManager.IsMinimizeToTrayEnabled)
+                        {
+                            trayManager.ShowBalloonTip("Prompt Saved", "Clipboard content saved successfully!");
+                        }
+
                         MessageBox.Show("Prompt saved from clipboard!",
                             "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                         LoadPrompts();
@@ -177,7 +245,7 @@ namespace PromptVault
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new SettingsDialog(databaseService, importService);
+            var dialog = new SettingsDialog(databaseService, importService, hotkeyManager, trayManager);
             dialog.ShowDialog();
         }
 
@@ -186,14 +254,8 @@ namespace PromptVault
             try
             {
                 allPrompts = databaseService.GetAllPrompts();
-
-                // Update count
                 PromptCountText.Text = $"({allPrompts.Count})";
-
-                // Populate filters
                 PopulateFilters();
-
-                // Apply current filters and display
                 ApplyFiltersAndDisplay();
             }
             catch (Exception ex)
@@ -205,7 +267,6 @@ namespace PromptVault
 
         private void SetupFilters()
         {
-            // AI Platform filter
             AIPlatformList.SelectionChanged += (s, e) =>
             {
                 var selected = AIPlatformList.SelectedItem as ListBoxItem;
@@ -213,7 +274,6 @@ namespace PromptVault
                 ApplyFiltersAndDisplay();
             };
 
-            // Model Version filter
             ModelVersionList.SelectionChanged += (s, e) =>
             {
                 var selected = ModelVersionList.SelectedItem as ListBoxItem;
@@ -221,7 +281,6 @@ namespace PromptVault
                 ApplyFiltersAndDisplay();
             };
 
-            // Tags filter
             TagsList.SelectionChanged += (s, e) =>
             {
                 var selected = TagsList.SelectedItem as ListBoxItem;
@@ -229,7 +288,6 @@ namespace PromptVault
                 ApplyFiltersAndDisplay();
             };
 
-            // Favorites checkbox
             FavoritesOnly.Checked += (s, e) =>
             {
                 showFavoritesOnly = true;
@@ -241,11 +299,33 @@ namespace PromptVault
                 showFavoritesOnly = false;
                 ApplyFiltersAndDisplay();
             };
+
+            SearchBox.TextChanged += (s, e) =>
+            {
+                ApplyFiltersAndDisplay();
+            };
+
+            SearchBox.GotFocus += (s, e) =>
+            {
+                if (SearchBox.Text == "Search prompts...")
+                {
+                    SearchBox.Text = "";
+                    SearchBox.Foreground = (Brush)Application.Current.Resources["TextBrush"];
+                }
+            };
+
+            SearchBox.LostFocus += (s, e) =>
+            {
+                if (string.IsNullOrWhiteSpace(SearchBox.Text))
+                {
+                    SearchBox.Text = "Search prompts...";
+                    SearchBox.Foreground = (Brush)Application.Current.Resources["TextSecondaryBrush"];
+                }
+            };
         }
 
         private void PopulateFilters()
         {
-            // Populate AI Platforms
             var aiProviders = allPrompts.Select(p => p.AIProvider).Distinct().OrderBy(p => p).ToList();
             AIPlatformList.Items.Clear();
             AIPlatformList.Items.Add(new ListBoxItem { Content = "All", IsSelected = true });
@@ -254,7 +334,6 @@ namespace PromptVault
                 AIPlatformList.Items.Add(new ListBoxItem { Content = provider });
             }
 
-            // Populate Model Versions
             var modelVersions = allPrompts.Select(p => p.ModelVersion).Distinct().OrderBy(m => m).ToList();
             ModelVersionList.Items.Clear();
             ModelVersionList.Items.Add(new ListBoxItem { Content = "All", IsSelected = true });
@@ -263,7 +342,6 @@ namespace PromptVault
                 ModelVersionList.Items.Add(new ListBoxItem { Content = model });
             }
 
-            // Populate Tags
             var allTags = allPrompts.SelectMany(p => p.Tags).Distinct().OrderBy(t => t).ToList();
             TagsList.Items.Clear();
             TagsList.Items.Add(new ListBoxItem { Content = "All", IsSelected = true });
@@ -279,40 +357,37 @@ namespace PromptVault
 
             var filtered = allPrompts.AsEnumerable();
 
-            // Apply AI Platform filter
+            string searchText = SearchBox?.Text?.Trim() ?? "";
+            if (!string.IsNullOrEmpty(searchText) && searchText != "Search prompts...")
+            {
+                filtered = filtered.Where(p =>
+                    p.Title.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    p.Content.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    p.Tags.Any(t => t.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                    p.AIProvider.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    p.ModelVersion.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                );
+            }
+
             if (currentAIFilter != "All")
-            {
                 filtered = filtered.Where(p => p.AIProvider == currentAIFilter);
-            }
 
-            // Apply Model Version filter
             if (currentModelFilter != "All")
-            {
                 filtered = filtered.Where(p => p.ModelVersion == currentModelFilter);
-            }
 
-            // Apply Tag filter
             if (currentTagFilter != "All")
-            {
                 filtered = filtered.Where(p => p.Tags.Contains(currentTagFilter));
-            }
 
-            // Apply Favorites filter
             if (showFavoritesOnly)
-            {
                 filtered = filtered.Where(p => p.IsFavorite);
-            }
 
-            // Display filtered prompts
             DisplayPrompts(filtered.ToList());
         }
 
         private void DisplayPrompts(List<Prompt> prompts)
         {
-            // Clear existing prompt cards
             PromptsContainer.Children.Clear();
 
-            // Generate prompt cards dynamically
             if (prompts.Count == 0)
             {
                 var emptyText = new TextBlock
@@ -321,7 +396,7 @@ namespace PromptVault
                         ? "No prompts match the current filters.\nTry adjusting your filters."
                         : "No prompts yet. Click '➕ New Prompt' to get started!",
                     FontSize = 16,
-                    Foreground = (System.Windows.Media.Brush)Application.Current.Resources["TextSecondaryBrush"],
+                    Foreground = (Brush)Application.Current.Resources["TextSecondaryBrush"],
                     HorizontalAlignment = HorizontalAlignment.Center,
                     TextAlignment = TextAlignment.Center,
                     Margin = new Thickness(0, 40, 0, 0)
@@ -336,16 +411,16 @@ namespace PromptVault
                 }
             }
 
-            // Update count with filtered number
             PromptCountText.Text = $"({prompts.Count})";
         }
 
-        private System.Windows.Controls.Border CreatePromptCard(Prompt prompt)
+        private Border CreatePromptCard(Prompt prompt)
         {
-            var card = new System.Windows.Controls.Border
+            var card = new Border
             {
-                Style = (Style)Application.Current.Resources["PromptCardStyle"],
-                Tag = prompt // Store prompt object for later use
+                Style = (Style)Application.Current.Resources["CardStyle"],
+                Margin = new Thickness(0, 0, 0, 12),
+                Tag = prompt
             };
 
             var grid = new Grid();
@@ -354,31 +429,26 @@ namespace PromptVault
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            // Row 0: Title and Favorite
             var titleGrid = new Grid { Margin = new Thickness(0, 0, 0, 8) };
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            var titleIcon = prompt.Title.StartsWith("📝") || prompt.Title.StartsWith("✍️") ||
-                           prompt.Title.StartsWith("🔍") || prompt.Title.StartsWith("💡")
-                           ? "" : "📝 ";
-
             var titleText = new TextBlock
             {
-                Text = titleIcon + prompt.Title,
+                Text = "📝 " + prompt.Title,
                 FontSize = 16,
                 FontWeight = FontWeights.SemiBold,
-                Foreground = (System.Windows.Media.Brush)Application.Current.Resources["TextBrush"]
+                Foreground = (Brush)Application.Current.Resources["TextBrush"]
             };
             Grid.SetColumn(titleText, 0);
 
             var favoriteButton = new Button
             {
                 Content = prompt.IsFavorite ? "⭐" : "☆",
-                Background = System.Windows.Media.Brushes.Transparent,
-                BorderThickness = new Thickness(0),
+                Style = (Style)Application.Current.Resources["IconButtonStyle"],
+                Width = 32,
+                Height = 32,
                 FontSize = 18,
-                Cursor = Cursors.Hand,
                 Tag = prompt
             };
             favoriteButton.Click += FavoriteButton_Click;
@@ -388,59 +458,55 @@ namespace PromptVault
             titleGrid.Children.Add(favoriteButton);
             Grid.SetRow(titleGrid, 0);
 
-            // Row 1: Tags and Model
             var tagsPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
 
-            // Model badge
-            var modelBorder = new System.Windows.Controls.Border
+            var modelBorder = new Border
             {
                 Background = GetModelColor(prompt.AIProvider),
-                CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(8, 4, 8, 4),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(10, 5, 10, 5),
                 Margin = new Thickness(0, 0, 8, 0)
             };
             var modelText = new TextBlock
             {
                 Text = prompt.ModelVersion,
                 FontSize = 12,
-                Foreground = System.Windows.Media.Brushes.White
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Brushes.White
             };
             modelBorder.Child = modelText;
             tagsPanel.Children.Add(modelBorder);
 
-            // Tags
             foreach (var tag in prompt.Tags.Take(3))
             {
-                var tagBorder = new System.Windows.Controls.Border
+                var tagBorder = new Border
                 {
                     Background = GetTagColor(tag),
-                    CornerRadius = new CornerRadius(4),
-                    Padding = new Thickness(8, 4, 8, 4),
+                    CornerRadius = new CornerRadius(6),
+                    Padding = new Thickness(10, 5, 10, 5),
                     Margin = new Thickness(0, 0, 8, 0)
                 };
                 var tagText = new TextBlock
                 {
                     Text = "🏷️ " + tag,
                     FontSize = 12,
-                    Foreground = System.Windows.Media.Brushes.White
+                    Foreground = Brushes.White
                 };
                 tagBorder.Child = tagText;
                 tagsPanel.Children.Add(tagBorder);
             }
             Grid.SetRow(tagsPanel, 1);
 
-            // Row 2: Preview
             var previewText = new TextBlock
             {
                 Text = prompt.GetPreview(150),
                 FontSize = 14,
-                Foreground = (System.Windows.Media.Brush)Application.Current.Resources["TextSecondaryBrush"],
+                Foreground = (Brush)Application.Current.Resources["TextSecondaryBrush"],
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 0, 0, 12)
             };
             Grid.SetRow(previewText, 2);
 
-            // Row 3: Footer
             var footerGrid = new Grid();
             footerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             footerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -449,49 +515,57 @@ namespace PromptVault
             {
                 Text = "📅 " + prompt.GetRelativeDate(),
                 FontSize = 12,
-                Foreground = (System.Windows.Media.Brush)Application.Current.Resources["TextSecondaryBrush"],
+                Foreground = (Brush)Application.Current.Resources["TextSecondaryBrush"],
                 VerticalAlignment = VerticalAlignment.Center
             };
             Grid.SetColumn(dateText, 0);
 
             var buttonsPanel = new StackPanel { Orientation = Orientation.Horizontal };
 
-            // Copy button
             var copyButton = new Button
             {
                 Content = "📋 Copy",
                 Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4CAF50")),
-                Foreground = System.Windows.Media.Brushes.White,
+                Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
-                Padding = new Thickness(12, 6, 12, 6),
+                Padding = new Thickness(14, 7, 14, 7),
                 FontSize = 12,
                 Cursor = Cursors.Hand,
                 Margin = new Thickness(0, 0, 8, 0),
                 Tag = prompt
             };
+            var copyButtonTemplate = new ControlTemplate(typeof(Button));
+            var borderFactory = new FrameworkElementFactory(typeof(Border));
+            borderFactory.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding("Background") { RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.TemplatedParent) });
+            borderFactory.SetValue(Border.CornerRadiusProperty, new CornerRadius(6));
+            borderFactory.SetBinding(Border.PaddingProperty, new System.Windows.Data.Binding("Padding") { RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.TemplatedParent) });
+            var presenterFactory = new FrameworkElementFactory(typeof(ContentPresenter));
+            presenterFactory.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            presenterFactory.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+            borderFactory.AppendChild(presenterFactory);
+            copyButtonTemplate.VisualTree = borderFactory;
+            copyButton.Template = copyButtonTemplate;
             copyButton.Click += CopyButton_Click;
 
-            // Edit button
             var editButton = new Button
             {
                 Content = "✏️",
-                Background = System.Windows.Media.Brushes.Transparent,
-                BorderThickness = new Thickness(0),
+                Style = (Style)Application.Current.Resources["IconButtonStyle"],
+                Width = 32,
+                Height = 32,
                 FontSize = 16,
-                Cursor = Cursors.Hand,
                 Margin = new Thickness(0, 0, 8, 0),
                 Tag = prompt
             };
             editButton.Click += EditButton_Click;
 
-            // Delete button
             var deleteButton = new Button
             {
                 Content = "🗑️",
-                Background = System.Windows.Media.Brushes.Transparent,
-                BorderThickness = new Thickness(0),
+                Style = (Style)Application.Current.Resources["IconButtonStyle"],
+                Width = 32,
+                Height = 32,
                 FontSize = 16,
-                Cursor = Cursors.Hand,
                 Tag = prompt
             };
             deleteButton.Click += DeleteButton_Click;
@@ -524,23 +598,17 @@ namespace PromptVault
                 if (prompt != null)
                 {
                     Clipboard.SetText(prompt.Content);
-
-                    // Update usage count
                     prompt.UsageCount++;
                     databaseService.UpdatePrompt(prompt);
 
-                    // Show feedback
                     button.Content = "✓ Copied!";
-                    var originalContent = "📋 Copy";
-
-                    // Reset after 2 seconds
                     var timer = new System.Windows.Threading.DispatcherTimer
                     {
                         Interval = TimeSpan.FromSeconds(2)
                     };
                     timer.Tick += (s, args) =>
                     {
-                        button.Content = originalContent;
+                        button.Content = "📋 Copy";
                         timer.Stop();
                     };
                     timer.Start();
@@ -607,108 +675,35 @@ namespace PromptVault
             }
         }
 
-        private System.Windows.Media.Brush GetModelColor(string aiProvider)
+        private Brush GetModelColor(string aiProvider)
         {
             return aiProvider switch
             {
-                "ChatGPT" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2E7D32")),
-                "Claude" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1976D2")),
-                "Gemini" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7B1FA2")),
-                "Copilot" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E65100")),
+                "ChatGPT" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10a37f")),
+                "Claude" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#CC785C")),
+                "Gemini" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1a73e8")),
+                "Copilot" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0078d4")),
+                "Glm" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7B1FA2")),
                 _ => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#757575"))
             };
         }
 
-        private System.Windows.Media.Brush GetTagColor(string tag)
+        private Brush GetTagColor(string tag)
         {
-            // Use a hash of the tag name to get consistent colors
             int hash = tag.GetHashCode();
             var colors = new[]
             {
-                "#E65100", "#C2185B", "#1976D2", "#7B1FA2", "#388E3C",
-                "#F57C00", "#00796B", "#D32F2F", "#455A64", "#F57F17"
+                "#E91E63", "#9C27B0", "#673AB7", "#3F51B5", "#2196F3",
+                "#00BCD4", "#009688", "#4CAF50", "#FF9800", "#FF5722"
             };
             return new SolidColorBrush((Color)ColorConverter.ConvertFromString(colors[Math.Abs(hash) % colors.Length]));
         }
 
         protected override void OnClosed(EventArgs e)
         {
-            globalHotkey?.Unregister();
+            hotkeyManager?.Dispose();
+            trayManager?.Dispose();
             base.OnClosed(e);
-        }
-
-        protected override void OnStateChanged(EventArgs e)
-        {
-            if (WindowState == WindowState.Minimized)
-            {
-                // Optional: Minimize to system tray
-                // Hide();
-            }
-            base.OnStateChanged(e);
-        }
-    }
-
-    // Global Hotkey Handler
-    public class GlobalHotkey : IDisposable
-    {
-        [DllImport("user32.dll")]
-        private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
-
-        [DllImport("user32.dll")]
-        private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
-
-        private const int HOTKEY_ID = 9000;
-        private IntPtr handle;
-        private Window window;
-
-        public GlobalHotkey(ModifierKeys modifiers, Key key, Window window)
-        {
-            this.window = window;
-            this.handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
-
-            var source = System.Windows.Interop.HwndSource.FromHwnd(handle);
-            source.AddHook(HwndHook);
-        }
-
-        public void Register()
-        {
-            uint modifiers = 0;
-            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-                modifiers |= 0x0002; // MOD_CONTROL
-            if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
-                modifiers |= 0x0004; // MOD_SHIFT
-
-            // Ctrl+Shift = 0x0002 | 0x0004 = 0x0006
-            // V key = 0x56
-            RegisterHotKey(handle, HOTKEY_ID, 0x0006, 0x56);
-        }
-
-        public void Unregister()
-        {
-            UnregisterHotKey(handle, HOTKEY_ID);
-        }
-
-        private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-        {
-            const int WM_HOTKEY = 0x0312;
-            if (msg == WM_HOTKEY && wParam.ToInt32() == HOTKEY_ID)
-            {
-                // Show and activate the window
-                if (window.WindowState == WindowState.Minimized)
-                    window.WindowState = WindowState.Normal;
-
-                window.Show();
-                window.Activate();
-                window.Focus();
-
-                handled = true;
-            }
-            return IntPtr.Zero;
-        }
-
-        public void Dispose()
-        {
-            Unregister();
         }
     }
 }

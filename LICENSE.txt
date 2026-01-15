@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) [year] [fullname]
+Copyright (c) 2024 Ritesh Kumar Srivastava
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,29 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+================================================================================
+
+THIRD-PARTY LICENSES
+
+This software may include third-party libraries and components, each with their
+own license terms. Please refer to the individual library documentation for
+specific license information.
+
+Common dependencies may include:
+- SQLite (Public Domain)
+- Python libraries (various licenses)
+- UI frameworks (various licenses)
+
+For a complete list of dependencies and their licenses, please visit:
+https://github.com/ritesh-sri/PromptVault
+
+================================================================================
+
+PRIVACY NOTICE
+
+PromptVault is an offline-first application. All your data is stored locally
+on your computer in a SQLite database. We do not collect, transmit, or store
+any of your data on external servers.
+
+Your prompts, tags, and usage data remain private and under your control.
