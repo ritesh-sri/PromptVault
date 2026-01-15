@@ -39,7 +39,7 @@
 ### Installation
 
 #### Option 1: Download Release (Recommended for Users)
-1. Go to [Releases](https://github.com/yourusername/promptvault/releases)
+1. Go to [Releases](https://github.com/ritesh-sri/PromptVault/releases)
 2. Download the latest `PromptVault-Setup.exe`
 3. Run the installer
 4. Launch PromptVault from Start Menu or Desktop
