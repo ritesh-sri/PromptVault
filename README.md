@@ -255,12 +255,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📸 Screenshots
 
-*(Add screenshots here after building the UI)*
-
 - Main Window (Light Theme)
+  ![Light Theme](Light_theme.png)
+
 - Main Window (Dark Theme)
+  ![Dark Theme](Dark_theme.png)
+
 - Add Prompt Dialog
+  ![Add Prompt](add_new_prompt.png)
+
 - Settings Window
+  ![Settings](setting.png)
 
 ## 🎓 Tutorial Videos
 
