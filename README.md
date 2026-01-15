@@ -48,7 +48,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/promptvault.git
+git clone https://github.com/ritesh-sri/promptvault.git
 cd promptvault
 
 # Restore dependencies
@@ -229,8 +229,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-- GitHub Issues: [Report bugs or request features](https://github.com/yourusername/promptvault/issues)
-- Discussions: [Join the community](https://github.com/yourusername/promptvault/discussions)
+- GitHub Issues: [Report bugs or request features](https://github.com/ritesh-sri/promptvault/issues)
+- Discussions: [Join the community](https://github.com/ritesh-sri/promptvault/discussions)
 
 ## ⚡ Performance Tips
 
