@@ -99,19 +99,22 @@ PromptVault/
 ├── Models/
 │   └── Prompt.cs              # Data models
 ├── Services/
-│   └── DatabaseService.cs     # SQLite database operations
+│   ├── DatabaseService.cs     # SQLite operations
+│   ├── ImportService.cs       # CSV/Text import logic
+│   ├── HotkeyManager.cs       # Global hotkey handling
+│   └── ThemeManager.cs        # Theme state & persistence
 ├── Views/
-│   └── (Future dialogs)
+│   └── (UserControls)
 ├── Dialogs/
-│   └── (Add/Edit prompt dialogs - coming soon)
+│   ├── AddEditPromptDialog.xaml  # Create/Edit prompts
+│   ├── ImportWizard.xaml         # CSV/Text import wizard
+│   ├── SettingsDialog.xaml       # App settings & tools
+│   └── HotkeyInputDialog.xaml    # Hotkey configuration
 ├── Helpers/
-│   └── (Utility classes - coming soon)
-├── Resources/
-│   └── (Icons, images)
-├── MainWindow.xaml            # Main UI
+│   └── (Utility classes)
+├── MainWindow.xaml            # Main UI & filtering
 ├── MainWindow.xaml.cs         # Main window logic
 ├── App.xaml                   # Application configuration
-├── App.xaml.cs                # Application startup logic
 └── PromptVault.csproj         # Project file
 ```
 
@@ -148,45 +151,34 @@ PromptVault/
 - Backup recommended before major updates
 
 ### Hotkey Customization
-*(Coming in v0.2.0)*
-
-### Export/Import Settings
-*(Coming in v0.2.0)*
+- Default: `Ctrl+Shift+V`
+- Fully customizable in **Settings > Hotkeys**
+- Supports global shortcuts for "Open App" and "Quick Capture"
 
 ## 🛣️ Roadmap
 
-### v0.1.0 (Current - MVP)
-- ✅ Basic prompt CRUD operations
-- ✅ SQLite local storage
-- ✅ Filter by AI/Model/Tags
-- ✅ Global hotkey (Ctrl+Shift+V)
-- ✅ Clipboard capture
-- ✅ Dark/Light themes
-- ✅ Starter prompts
+### v1.0.0 (Current Release)
+- ✅ **Advanced Prompt Management**: Add/Edit dialogs with rich validation
+- ✅ **Import/Export Suite**: CSV & Text file support with Import Wizard
+- ✅ **Database Tools**: Backup, Restore, and Clear Data
+- ✅ **Enhanced UI**: Card-based layout with modern aesthetics & animations
+- ✅ **Smart Filtering**: Multi-filter support (AI, Model, Tags)
+- ✅ **Theme System**: Dynamic Dark/Light mode with persistence
+- ✅ **Search Engine**: Full-text search across all prompt data
+- ✅ **Custom Hotkeys**: User-configurable global shortcuts
+- ✅ **System Tray**: Minimized background operation
 
-### v0.2.0 (Planned)
-- [ ] Add/Edit prompt dialog
-- [ ] CSV import wizard
-- [ ] Export to CSV/JSON
-- [ ] Custom hotkey configuration
-- [ ] System tray integration
-- [ ] Search functionality
-- [ ] Prompt templates with variables
+### v1.1.0 (Planned)
+- [ ] **Auto-Backup**: Automated database backups on schedule
+- [ ] **Token Counter**: Real-time cost estimation
+- [ ] **Prompt Versioning**: History tracking for prompt edits
+- [ ] **Categories**: Folder-based hierarchical organization
 
-### v0.3.0 (Future)
-- [ ] Token counter
-- [ ] Prompt version history
-- [ ] Categories/folders
-- [ ] Backup/Restore
-- [ ] Auto-update checker
-- [ ] Fuzzy search
-- [ ] Keyboard shortcuts for all actions
-
-### v1.0.0 (Future)
-- [ ] Plugin system
-- [ ] Cloud sync (optional)
-- [ ] Prompt marketplace
-- [ ] Team collaboration features
+### v2.0.0 (Future)
+- [ ] Cloud Sync
+- [ ] Plugin Architecture
+- [ ] Team Collaboration Features
+- [ ] Community Prompt Marketplace
 
 ## 🤝 Contributing
 

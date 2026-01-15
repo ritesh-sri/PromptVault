@@ -365,3 +365,4 @@ FodyWeavers.xsd
 # Executables and installer scripts
 *.exe
 *.iss
+IMPLEMENTATION_GUIDE.md
