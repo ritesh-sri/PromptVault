@@ -25,6 +25,13 @@ namespace PromptVault
         private bool showFavoritesOnly = false;
         private bool hasShownFirstMinimizeTip = false;
 
+        // New fields for enhanced features
+        private KeyboardShortcutsManager keyboardShortcuts;
+        private EnhancedExportService enhancedExportService;
+        private Prompt selectedPrompt;
+        private System.Windows.Controls.Primitives.Popup previewPopup;
+        private PromptVault.Controls.PromptPreviewPopup previewControl;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -35,6 +42,27 @@ namespace PromptVault
             themeManager = ThemeManager.Instance;
             trayManager = new SystemTrayManager(this);
             hotkeyManager = new HotkeyManager(this);
+
+            // Initialize keyboard shortcuts
+            keyboardShortcuts = new KeyboardShortcutsManager(this);
+            keyboardShortcuts.OnNewPromptRequested += (s, e) => NewPromptButton_Click(null, null);
+            keyboardShortcuts.OnDeleteSelectedRequested += (s, e) => DeleteSelectedPrompt();
+            keyboardShortcuts.OnSearchFocusRequested += (s, e) => FocusSearch();
+            keyboardShortcuts.OnRefreshRequested += (s, e) => LoadPrompts();
+            keyboardShortcuts.OnToggleFavoritesRequested += (s, e) => ToggleFavoritesFilter();
+            keyboardShortcuts.OnCopySelectedRequested += (s, e) => CopySelectedPrompt();
+            keyboardShortcuts.OnEditSelectedRequested += (s, e) => EditSelectedPrompt();
+            keyboardShortcuts.OnOpenSettingsRequested += (s, e) => SettingsButton_Click(null, null);
+            keyboardShortcuts.OnOpenStatisticsRequested += (s, e) => StatisticsButton_Click(null, null);
+            keyboardShortcuts.OnImportRequested += (s, e) => ImportButton_Click(null, null);
+            keyboardShortcuts.OnExportRequested += (s, e) => ShowExportDialog();
+            keyboardShortcuts.OnQuickFilterRequested += (s, filterIndex) => ApplyQuickFilter(filterIndex);
+
+            // Initialize enhanced export service
+            enhancedExportService = new EnhancedExportService(importService);
+
+            // Initialize preview popup
+            InitializePreviewPopup();
 
             // Initialize theme
             themeManager.InitializeTheme();
@@ -65,12 +93,25 @@ namespace PromptVault
             LoadPrompts();
         }
 
+        // Preview Popup Initialization
+        private void InitializePreviewPopup()
+        {
+            previewControl = new PromptVault.Controls.PromptPreviewPopup();
+
+            previewPopup = new System.Windows.Controls.Primitives.Popup
+            {
+                Child = previewControl,
+                AllowsTransparency = true,
+                StaysOpen = false,
+                Placement = System.Windows.Controls.Primitives.PlacementMode.Mouse,
+                PopupAnimation = System.Windows.Controls.Primitives.PopupAnimation.Fade
+            };
+        }
+
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Initialize hotkeys after window handle is created
             hotkeyManager.Initialize();
 
-            // Subscribe to hotkey events
             hotkeyManager.OpenApplicationRequested += (s, ev) =>
             {
                 Dispatcher.Invoke(() => RestoreFromTray());
@@ -106,7 +147,6 @@ namespace PromptVault
 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            // If minimize to tray is enabled, just minimize instead of closing
             if (trayManager.IsMinimizeToTrayEnabled)
             {
                 e.Cancel = true;
@@ -153,7 +193,7 @@ namespace PromptVault
 
         private void ExitApplication()
         {
-            trayManager.SetMinimizeToTray(false); // Disable to allow actual exit
+            trayManager.SetMinimizeToTray(false);
             Application.Current.Shutdown();
         }
 
@@ -210,7 +250,6 @@ namespace PromptVault
                     {
                         databaseService.AddPrompt(dialog.EditingPrompt);
 
-                        // Show notification
                         if (trayManager.IsMinimizeToTrayEnabled)
                         {
                             trayManager.ShowBalloonTip("Prompt Saved", "Clipboard content saved successfully!");
@@ -426,8 +465,14 @@ namespace PromptVault
             {
                 Style = (Style)Application.Current.Resources["CardStyle"],
                 Margin = new Thickness(0, 0, 0, 12),
-                Tag = prompt
+                Tag = prompt,
+                Cursor = Cursors.Hand
             };
+
+            // Add hover event handlers for preview
+            card.MouseEnter += PromptCard_MouseEnter;
+            card.MouseLeave += PromptCard_MouseLeave;
+            card.MouseDown += PromptCard_MouseDown;
 
             var grid = new Grid();
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -594,6 +639,58 @@ namespace PromptVault
             return card;
         }
 
+        // Prompt Card Hover Events for Preview
+        private void PromptCard_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            var card = sender as Border;
+            var prompt = card?.Tag as Prompt;
+
+            if (prompt != null)
+            {
+                selectedPrompt = prompt;
+
+                var timer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(500)
+                };
+
+                timer.Tick += (s, args) =>
+                {
+                    timer.Stop();
+                    if (selectedPrompt == prompt)
+                    {
+                        previewControl.LoadPrompt(prompt);
+                        previewPopup.IsOpen = true;
+                    }
+                };
+
+                timer.Start();
+
+                // Store both prompt and timer using Tuple
+                card.Tag = new Tuple<Prompt, System.Windows.Threading.DispatcherTimer>(prompt, timer);
+            }
+        }
+
+        private void PromptCard_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            var card = sender as Border;
+
+            if (card?.Tag is Tuple<Prompt, System.Windows.Threading.DispatcherTimer> tuple)
+            {
+                tuple.Item2.Stop();
+                card.Tag = tuple.Item1; // Restore original prompt tag
+            }
+
+            previewPopup.IsOpen = false;
+            selectedPrompt = null;
+        }
+
+        private void PromptCard_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            previewPopup.IsOpen = false;
+        }
+
+        // Button Click Handlers
         private void CopyButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -681,6 +778,138 @@ namespace PromptVault
             }
         }
 
+        // Keyboard Shortcut Handlers
+        private void DeleteSelectedPrompt()
+        {
+            if (selectedPrompt != null)
+            {
+                var result = MessageBox.Show(
+                    $"Are you sure you want to delete this prompt?\n\n\"{selectedPrompt.Title}\"\n\nThis action cannot be undone.",
+                    "Confirm Delete",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    databaseService.DeletePrompt(selectedPrompt.Id);
+                    selectedPrompt = null;
+                    LoadPrompts();
+                }
+            }
+        }
+
+        private void FocusSearch()
+        {
+            SearchBox.Focus();
+            SearchBox.SelectAll();
+        }
+
+        private void ToggleFavoritesFilter()
+        {
+            FavoritesOnly.IsChecked = !FavoritesOnly.IsChecked;
+        }
+
+        private void CopySelectedPrompt()
+        {
+            if (selectedPrompt != null)
+            {
+                try
+                {
+                    Clipboard.SetText(selectedPrompt.Content);
+                    selectedPrompt.UsageCount++;
+                    databaseService.UpdatePrompt(selectedPrompt);
+
+                    trayManager?.ShowBalloonTip("Copied!",
+                        $"'{selectedPrompt.Title}' copied to clipboard");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to copy: {ex.Message}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void EditSelectedPrompt()
+        {
+            if (selectedPrompt != null)
+            {
+                var dialog = new AddEditPromptDialog(selectedPrompt);
+                if (dialog.ShowDialog() == true)
+                {
+                    databaseService.UpdatePrompt(dialog.EditingPrompt);
+                    LoadPrompts();
+                }
+            }
+        }
+
+        private void ApplyQuickFilter(int filterIndex)
+        {
+            var platforms = AIPlatformList.Items.OfType<ListBoxItem>().ToList();
+
+            if (filterIndex > 0 && filterIndex < platforms.Count)
+            {
+                AIPlatformList.SelectedIndex = filterIndex;
+            }
+        }
+
+        // Enhanced Export Dialog - Used by keyboard shortcuts
+        private void ShowExportDialog()
+        {
+            ShowExportDialog(null, null);
+        }
+
+        // XAML Click Event Handler - proper signature for WPF
+        private void ShowExportDialog(object sender, RoutedEventArgs e)
+        {
+            var exportDialog = new ExportFormatDialog();
+            if (exportDialog.ShowDialog() == true)
+            {
+                var format = exportDialog.SelectedFormat;
+                var extension = EnhancedExportService.GetFileExtension(format);
+
+                var saveDialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = "Export Prompts",
+                    Filter = EnhancedExportService.GetFileFilter(),
+                    FileName = $"promptvault_export_{DateTime.Now:yyyyMMdd_HHmmss}{extension}",
+                    DefaultExt = extension
+                };
+
+                saveDialog.FilterIndex = (int)format + 1;
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    try
+                    {
+                        var allPromptsToExport = databaseService.GetAllPrompts();
+                        enhancedExportService.Export(saveDialog.FileName, allPromptsToExport, format);
+
+                        MessageBox.Show($"✅ Export Complete!\n\n" +
+                                       $"Successfully exported {allPromptsToExport.Count} prompts to:\n" +
+                                       $"{saveDialog.FileName}",
+                            "Export Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        System.Diagnostics.Process.Start("explorer.exe",
+                            $"/select,\"{saveDialog.FileName}\"");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Export failed: {ex.Message}",
+                            "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+
+        // Show keyboard shortcuts help
+        private void ShowKeyboardShortcuts_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(KeyboardShortcutsManager.GetShortcutsHelp(),
+                "Keyboard Shortcuts", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // Helper Methods
         private Brush GetModelColor(string aiProvider)
         {
             return aiProvider switch
@@ -705,8 +934,10 @@ namespace PromptVault
             return new SolidColorBrush((Color)ColorConverter.ConvertFromString(colors[Math.Abs(hash) % colors.Length]));
         }
 
+        // Cleanup
         protected override void OnClosed(EventArgs e)
         {
+            keyboardShortcuts?.Unregister();
             hotkeyManager?.Dispose();
             trayManager?.Dispose();
             base.OnClosed(e);

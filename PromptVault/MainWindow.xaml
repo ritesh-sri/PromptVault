@@ -60,11 +60,34 @@
                 <!-- Header Actions -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                     <Button x:Name="StatisticsButton"
-                            Content="📊"
+                            Content="📊 Statistics"
                             Style="{DynamicResource IconButtonStyle}"
+                            Padding="12,8"
+                            FontSize="13"
                             Margin="0,0,8,0"
                             Click="StatisticsButton_Click"
-                            ToolTip="View statistics dashboard"/>   
+                            ToolTip="View dashboard (Ctrl+S)"/>
+
+                    <!-- Export Button - FIXED -->
+                    <Button x:Name="ExportButton"
+                            Content="📤 Export"
+                            Style="{DynamicResource IconButtonStyle}"
+                            Padding="12,8"
+                            FontSize="13"
+                            Margin="0,0,8,0"
+                            Click="ShowExportDialog"
+                            ToolTip="Export prompts (Ctrl+Shift+E)"/>
+
+                    <!-- Help/Shortcuts Button - FIXED -->
+                    <Button x:Name="HelpButton"
+                            Content="⌨️"
+                            Style="{DynamicResource IconButtonStyle}"
+                            Width="40"
+                            Height="40"
+                            FontSize="18"
+                            Margin="0,0,8,0"
+                            Click="ShowKeyboardShortcuts_Click"
+                            ToolTip="Keyboard shortcuts"/>
 
                     <Button x:Name="ThemeToggleButton" 
                             Content="🌙"

@@ -1,0 +1,207 @@
+﻿<UserControl x:Class="PromptVault.Controls.PromptPreviewPopup"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Opacity="0">
+    
+    <UserControl.Resources>
+        <Storyboard x:Key="FadeInAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                           From="0" To="1"
+                           Duration="0:0:0.2"
+                           AccelerationRatio="0.3"/>
+        </Storyboard>
+    </UserControl.Resources>
+    
+    <Border x:Name="PreviewBorder"
+            Background="{DynamicResource CardBrush}"
+            BorderBrush="{DynamicResource AccentBrush}"
+            BorderThickness="2"
+            CornerRadius="12"
+            MaxWidth="550"
+            MaxHeight="450"
+            MinWidth="400">
+        <Border.Effect>
+            <DropShadowEffect Color="Black"
+                            BlurRadius="25"
+                            ShadowDepth="8"
+                            Opacity="0.4"
+                            Direction="270"/>
+        </Border.Effect>
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header with gradient background -->
+            <Border Grid.Row="0" 
+                    Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="8"
+                    Padding="16,12"
+                    Margin="0,0,0,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="PreviewTitle"
+                               Grid.Column="0"
+                               Text="Prompt Title"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource TextBrush}"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center"/>
+
+                    <StackPanel Grid.Column="1" 
+                                Orientation="Horizontal"
+                                Margin="12,0,0,0"
+                                VerticalAlignment="Center">
+                        <TextBlock x:Name="FavoriteIcon"
+                                   Text="⭐"
+                                   FontSize="24"
+                                   Visibility="Collapsed"
+                                   VerticalAlignment="Center"
+                                   ToolTip="Favorite Prompt"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Metadata Badges -->
+            <WrapPanel Grid.Row="1" 
+                       Margin="0,0,0,16"
+                       Orientation="Horizontal">
+                <Border x:Name="ModelBadge"
+                        Background="#2196F3"
+                        CornerRadius="8"
+                        Padding="12,6"
+                        Margin="0,0,10,8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🤖 "
+                                   FontSize="12"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ModelText"
+                                   Text="Model"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="UsageCountBadge"
+                        Background="#4CAF50"
+                        CornerRadius="8"
+                        Padding="12,6"
+                        Margin="0,0,10,8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📊 "
+                                   FontSize="12"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="UsageCountText"
+                                   Text="Used 0 times"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel x:Name="TagsContainer"
+                            Orientation="Horizontal"/>
+            </WrapPanel>
+
+            <!-- Content Preview with enhanced styling -->
+            <Border Grid.Row="2"
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="16"
+                    Margin="0,0,0,16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              MaxHeight="200"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <TextBlock x:Name="ContentPreview"
+                               Text="Prompt content goes here..."
+                               FontSize="13"
+                               Foreground="{DynamicResource TextBrush}"
+                               TextWrapping="Wrap"
+                               LineHeight="22"
+                               FontFamily="Segoe UI, Consolas"/>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Statistics Row -->
+            <Border Grid.Row="3"
+                    Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Text="📅 "
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="DateInfo"
+                                   Text="Created: Jan 1, 2025"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <TextBlock Text="🔤 "
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="TokenInfo"
+                                   Text="~500 tokens"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <!-- Action Hint -->
+            <Border Grid.Row="4"
+                    Background="{DynamicResource AccentBrush}"
+                    CornerRadius="8"
+                    Padding="12,8"
+                    Opacity="0.9">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               Text="💡"
+                               FontSize="16"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0"/>
+
+                    <TextBlock Grid.Column="1"
+                               Text="Click the card to copy • Right-click for more options"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               TextWrapping="Wrap"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

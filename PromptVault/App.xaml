@@ -87,6 +87,58 @@
             </Style.Triggers>
         </Style>
 
+        <!-- Export Format RadioButton Style -->
+        <Style x:Key="ExportFormatRadioStyle" TargetType="RadioButton">
+            <Setter Property="Focusable" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Root"
+                        Background="{DynamicResource CardBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="2"
+                        CornerRadius="10"
+                        Padding="20"
+                        Cursor="Hand">
+
+                            <ContentPresenter />
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <!-- Selected -->
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#6366F1"/>
+                                <Setter TargetName="Root" Property="Background">
+                                    <Setter.Value>
+                                        <SolidColorBrush Color="#6366F1" Opacity="0.12"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+
+                            <!-- Hover -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#818CF8"/>
+                            </Trigger>
+
+                            <!-- Keyboard focus -->
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#4F46E5"/>
+                            </Trigger>
+
+                            <!-- Disabled -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.6"/>
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
         <!-- TextBox Style -->
         <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
@@ -108,5 +160,10 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <DropShadowEffect x:Key="CardShadow"
+                      Color="Black"
+                      BlurRadius="20"
+                      ShadowDepth="5"
+                      Opacity="0.3"/>
     </Application.Resources>
 </Application>
