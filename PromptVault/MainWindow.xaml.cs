@@ -29,8 +29,6 @@ namespace PromptVault
         private KeyboardShortcutsManager keyboardShortcuts;
         private EnhancedExportService enhancedExportService;
         private Prompt selectedPrompt;
-        private System.Windows.Controls.Primitives.Popup previewPopup;
-        private PromptVault.Controls.PromptPreviewPopup previewControl;
 
         public MainWindow()
         {
@@ -61,9 +59,6 @@ namespace PromptVault
             // Initialize enhanced export service
             enhancedExportService = new EnhancedExportService(importService);
 
-            // Initialize preview popup
-            InitializePreviewPopup();
-
             // Initialize theme
             themeManager.InitializeTheme();
             UpdateThemeButton();
@@ -91,21 +86,6 @@ namespace PromptVault
             this.Closing += MainWindow_Closing;
 
             LoadPrompts();
-        }
-
-        // Preview Popup Initialization
-        private void InitializePreviewPopup()
-        {
-            previewControl = new PromptVault.Controls.PromptPreviewPopup();
-
-            previewPopup = new System.Windows.Controls.Primitives.Popup
-            {
-                Child = previewControl,
-                AllowsTransparency = true,
-                StaysOpen = false,
-                Placement = System.Windows.Controls.Primitives.PlacementMode.Mouse,
-                PopupAnimation = System.Windows.Controls.Primitives.PopupAnimation.Fade
-            };
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -310,6 +290,8 @@ namespace PromptVault
             }
         }
 
+        // Add these methods to MainWindow class
+
         private void SetupFilters()
         {
             AIPlatformList.SelectionChanged += (s, e) =>
@@ -465,14 +447,8 @@ namespace PromptVault
             {
                 Style = (Style)Application.Current.Resources["CardStyle"],
                 Margin = new Thickness(0, 0, 0, 12),
-                Tag = prompt,
-                Cursor = Cursors.Hand
+                Tag = prompt
             };
-
-            // Add hover event handlers for preview
-            card.MouseEnter += PromptCard_MouseEnter;
-            card.MouseLeave += PromptCard_MouseLeave;
-            card.MouseDown += PromptCard_MouseDown;
 
             var grid = new Grid();
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -573,6 +549,32 @@ namespace PromptVault
 
             var buttonsPanel = new StackPanel { Orientation = Orientation.Horizontal };
 
+            // VIEW BUTTON - Opens full detail dialog
+            var viewButton = new Button
+            {
+                Content = "👁️ View",
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2196F3")),
+                Foreground = Brushes.White,
+                BorderThickness = new Thickness(0),
+                Padding = new Thickness(14, 7, 14, 7),
+                FontSize = 12,
+                Cursor = Cursors.Hand,
+                Margin = new Thickness(0, 0, 8, 0),
+                Tag = prompt
+            };
+            var viewButtonTemplate = new ControlTemplate(typeof(Button));
+            var viewBorderFactory = new FrameworkElementFactory(typeof(Border));
+            viewBorderFactory.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding("Background") { RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.TemplatedParent) });
+            viewBorderFactory.SetValue(Border.CornerRadiusProperty, new CornerRadius(6));
+            viewBorderFactory.SetBinding(Border.PaddingProperty, new System.Windows.Data.Binding("Padding") { RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.TemplatedParent) });
+            var viewPresenterFactory = new FrameworkElementFactory(typeof(ContentPresenter));
+            viewPresenterFactory.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            viewPresenterFactory.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+            viewBorderFactory.AppendChild(viewPresenterFactory);
+            viewButtonTemplate.VisualTree = viewBorderFactory;
+            viewButton.Template = viewButtonTemplate;
+            viewButton.Click += ViewButton_Click;
+
             var copyButton = new Button
             {
                 Content = "📋 Copy",
@@ -621,6 +623,7 @@ namespace PromptVault
             };
             deleteButton.Click += DeleteButton_Click;
 
+            buttonsPanel.Children.Add(viewButton);  // View button first
             buttonsPanel.Children.Add(copyButton);
             buttonsPanel.Children.Add(editButton);
             buttonsPanel.Children.Add(deleteButton);
@@ -639,55 +642,25 @@ namespace PromptVault
             return card;
         }
 
-        // Prompt Card Hover Events for Preview
-        private void PromptCard_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+        // NEW: View button click handler - Opens full detail dialog
+        private void ViewButton_Click(object sender, RoutedEventArgs e)
         {
-            var card = sender as Border;
-            var prompt = card?.Tag as Prompt;
+            var button = sender as Button;
+            var prompt = button?.Tag as Prompt;
 
             if (prompt != null)
             {
-                selectedPrompt = prompt;
-
-                var timer = new System.Windows.Threading.DispatcherTimer
+                var dialog = new PromptDetailDialog(prompt);
+                if (dialog.ShowDialog() == true)
                 {
-                    Interval = TimeSpan.FromMilliseconds(500)
-                };
-
-                timer.Tick += (s, args) =>
-                {
-                    timer.Stop();
-                    if (selectedPrompt == prompt)
+                    // Update if changes were made
+                    if (dialog.WasEdited || dialog.FavoriteToggled)
                     {
-                        previewControl.LoadPrompt(prompt);
-                        previewPopup.IsOpen = true;
+                        databaseService.UpdatePrompt(prompt);
+                        LoadPrompts(); // Refresh the view
                     }
-                };
-
-                timer.Start();
-
-                // Store both prompt and timer using Tuple
-                card.Tag = new Tuple<Prompt, System.Windows.Threading.DispatcherTimer>(prompt, timer);
+                }
             }
-        }
-
-        private void PromptCard_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            var card = sender as Border;
-
-            if (card?.Tag is Tuple<Prompt, System.Windows.Threading.DispatcherTimer> tuple)
-            {
-                tuple.Item2.Stop();
-                card.Tag = tuple.Item1; // Restore original prompt tag
-            }
-
-            previewPopup.IsOpen = false;
-            selectedPrompt = null;
-        }
-
-        private void PromptCard_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            previewPopup.IsOpen = false;
         }
 
         // Button Click Handlers
@@ -778,7 +751,9 @@ namespace PromptVault
             }
         }
 
-        // Keyboard Shortcut Handlers
+        // Continue with keyboard shortcuts and helper methods...
+
+        // Keyboard Shortcut Handlers (same as before)
         private void DeleteSelectedPrompt()
         {
             if (selectedPrompt != null)
@@ -853,13 +828,12 @@ namespace PromptVault
             }
         }
 
-        // Enhanced Export Dialog - Used by keyboard shortcuts
+        // Enhanced Export Dialog
         private void ShowExportDialog()
         {
             ShowExportDialog(null, null);
         }
 
-        // XAML Click Event Handler - proper signature for WPF
         private void ShowExportDialog(object sender, RoutedEventArgs e)
         {
             var exportDialog = new ExportFormatDialog();
@@ -902,7 +876,6 @@ namespace PromptVault
             }
         }
 
-        // Show keyboard shortcuts help
         private void ShowKeyboardShortcuts_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show(KeyboardShortcutsManager.GetShortcutsHelp(),

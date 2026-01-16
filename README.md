@@ -304,11 +304,11 @@ All settings accessible through Settings dialog:
 - ✅ Usage tracking
 - ✅ Token Counter
 - ✅ Statistics Dashboard
+- ✅ Keyboard Shortcuts
+- ✅ Export Multiple Formats
 
 ### 🚧 v1.2.0 (In Progress)
 - [ ] **Prompt Templates** - Variables like {{topic}} for reusable prompts
-- [ ] **Keyboard Shortcuts** - Ctrl+N, Ctrl+F, etc. for power users
-- [ ] **Export Formats** - Markdown, JSON export options
 - [ ] **Multi-Select** - Bulk operations on multiple prompts
 
 ### 📅 v0.3.0 (Planned)
