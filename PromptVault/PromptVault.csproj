@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<!-- Remove debug symbols from release builds -->
+		<DebugType>none</DebugType>
+		<DebugSymbols>false</DebugSymbols>
+		<PublishSingleFile>true</PublishSingleFile>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows8.0</TargetFramework>
 		<Nullable>enable</Nullable>
@@ -17,6 +21,9 @@
 		<RepositoryUrl>https://github.com/ritesh-sri/PromptVault</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/ritesh-sri/PromptVault</PackageProjectUrl>
 		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<PublishTrimmed>false</PublishTrimmed>
+		<TrimMode>partial</TrimMode>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
 	</PropertyGroup>
 
 	<ItemGroup>
