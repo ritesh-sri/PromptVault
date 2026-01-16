@@ -366,3 +366,4 @@ FodyWeavers.xsd
 *.exe
 *.iss
 IMPLEMENTATION_GUIDE.md
+/index.html
